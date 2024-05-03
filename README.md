@@ -1,3 +1,24 @@
+This is a **forked repository**. Here are some changes(updating):
+2024/05/03:
+- Add `examples/del_poses_files.sh` to retain the latest and oldest `kimera_distributed_poses_xxx.csv`.
+- Modify 1014-example.yaml to run `examples/del_poses_files.sh` simutaneously
+
+TODO:
+- [ ] Modify codes about output format to run `evo`
+- [ ] Add `.yaml` file to run euroc dataset. A [reference](https://github.com/MIT-SPARK/Kimera-Multi/issues/9).
+
+I have added a `run.sh` file to run `1014-example.yaml` without uploading due to privacy and the path below need to be modified:
+```shell
+#!/bin/sh
+DATA_PATH_STR="/path/to/your/datasets"
+NAME_TIME_STR="12_08"
+LOG_DIR_STR=${DATA_PATH_STR}"/log_data_"$NAME_TIME_STR
+
+CATKIN_WS="/path/to/your/workplace" DATA_PATH=${DATA_PATH_STR} LOG_DIR=${LOG_DIR_STR} NAME_TIME=${NAME_TIME_STR} tmuxp load 1014-example.yaml
+```
+Blogs about the [installation process](https://blog.csdn.net/Ben__Ho/article/details/137350202) and the [running process](https://blog.csdn.net/Ben__Ho/article/details/138171249) in Simplified Chinese.
+
+---
 <div align="center">
   <a href="https://mit.edu/sparklab/">
     <img align="left" src="images/spark_logo.png" height="80" alt="sparklab">
