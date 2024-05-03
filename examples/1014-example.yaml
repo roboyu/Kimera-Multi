@@ -7,12 +7,12 @@ environment:
   ROBOT3: "sparkal2"
   ROBOT4: "hathor"
   ROBOT5: "thoth"
-  ROSBAG0: "$DATA_PATH/10_14_acl_jackal.bag"
-  ROSBAG1: "$DATA_PATH/10_14_acl_jackal2.bag"
-  ROSBAG2: "$DATA_PATH/10_14_sparkal1.bag"
-  ROSBAG3: "$DATA_PATH/10_14_sparkal2.bag"
-  ROSBAG4: "$DATA_PATH/10_14_hathor.bag"
-  ROSBAG5: "$DATA_PATH/10_14_thoth.bag"
+  ROSBAG0: "$DATA_PATH/${NAME_TIME}_acl_jackal.bag"
+  ROSBAG1: "$DATA_PATH/${NAME_TIME}_acl_jackal2.bag"
+  ROSBAG2: "$DATA_PATH/${NAME_TIME}_sparkal1.bag"
+  ROSBAG3: "$DATA_PATH/${NAME_TIME}_sparkal2.bag"
+  ROSBAG4: "$DATA_PATH/${NAME_TIME}_hathor.bag"
+  ROSBAG5: "$DATA_PATH/${NAME_TIME}_thoth.bag"
   RATE: "1.0"
   NUM_ROBOTS: "6"
   BOW_SKIP_NUM: "3"
@@ -31,7 +31,7 @@ windows:
     - mkdir -p $LOG_DIR/$ROBOT3/distributed
     - mkdir -p $LOG_DIR/$ROBOT4/distributed
     - mkdir -p $LOG_DIR/$ROBOT5/distributed
-    - sleep 5;
+    - sleep 15;
 
   panes:
     - roslaunch kimera_distributed kimera_distributed.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT0/distributed
@@ -45,7 +45,7 @@ windows:
   layout: tiled
   shell_command_before:
     - source $CATKIN_WS/devel/setup.bash
-    - sleep 5;
+    - sleep 15;
 
   panes:
     - roslaunch kimera_distributed dpgo.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT0/distributed
@@ -59,7 +59,7 @@ windows:
   layout: tiled  
   shell_command_before:
     - source $CATKIN_WS/devel/setup.bash
-    - sleep 5;
+    - sleep 15;
 
   panes:
     - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
@@ -84,4 +84,5 @@ windows:
     - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG5 input_ns:=$ROBOT5 output_ns:=$ROBOT5 rate:=$RATE
     - sleep 15; rviz -d $(rospack find kimera_distributed)/rviz/single_machine.rviz
     - roscore
+    - bash del_poses_files.sh $LOG_DIR $LOG_DIR/../Kimera-Multi-Public-Data/ground_truth/ $NAME_TIME
     - rosnode kill -a \

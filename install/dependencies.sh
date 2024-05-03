@@ -17,7 +17,7 @@ apt-get install -y python-wstool python-catkin-tools ros-${ROS_DISTRO}-cmake-mod
 # apt install -y ros-melodic-mesh-tools
 apt-get install -y libgtk2.0-dev opencl-clhpp-headers
 apt install -y ros-${ROS_DISTRO}-pcl-ros ros-${ROS_DISTRO}-tf-conversions ros-${ROS_DISTRO}-camera-info-manager ros-${ROS_DISTRO}-interactive-markers ros-${ROS_DISTRO}-rviz 
-apt install -y ros-${ROS_DISTRO}-ompl
+apt install -y ros-${ROS_DISTRO}-ompl ros-${ROS_DISTRO}-image-transport-plugins
 apt-get install -y build-essential cmake-gui libsuitesparse-dev
 
 pip install vcstool empy==3.3.4 catkin_pkg numpy
