@@ -49,11 +49,11 @@ repositories:
     version: master
   kimera_distributed:
     type: git
-    url: git@github.com:MIT-SPARK/Kimera-Distributed.git
+    url: git@github.com:RonghaiHe/Kimera-Distributed.git
     version: main
   kimera_multi_lcd:
     type: git
-    url: git@github.com:MIT-SPARK/Kimera-Multi-LCD.git
+    url: git@github.com:RonghaiHe/Kimera-Multi-LCD.git
     version: main
   kimera_pgmo:
     type: git
