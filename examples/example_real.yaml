@@ -1,0 +1,29 @@
+session_name: kimera-distributed-example-real-world
+
+environment:
+  NAME: "wp0"
+  RATE: "1.0"
+  NUM_ROBOTS: "3"
+  BOW_SKIP_NUM: "3"
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: kimera-multi-window
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$NAME/distributed
+
+  panes:
+    # frontend
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=0 robot_name:=$NAME num_robots:=$NUM_ROBOTS log_output_path:=$LOG_DIR/$NAME/distributed
+    # dpgo
+    - roslaunch kimera_distributed dpgo.launch robot_id:=0 robot_name:=$NAME num_robots:=$NUM_ROBOTS multi_master:=false log_output_path:=$LOG_DIR/$NAME/distributed
+    # vio
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$NAME robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
+    # rviz
+    rviz -d $(rospack find kimera_distributed)/rviz/single_machine.rviz
+    # Press enter to kill
+    - rosnode kill -a \
