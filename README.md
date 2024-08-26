@@ -1,4 +1,8 @@
 This is a **forked repository**. Here are some changes(updating):
+
+2024/08/26:
+- Add new branch [ubuntu18](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy in Ubuntu 18.04
+
 2024/05/03:
 - Add `examples/del_poses_files.sh` to retain the latest and oldest `kimera_distributed_poses_xxx.csv`.
 - Modify 1014-example.yaml to run `examples/del_poses_files.sh` simutaneously
@@ -103,6 +107,10 @@ Note that this example only uses a single ROS master, and will most likely not w
 To run with separate ROS masters on separate machines, we will need to use the Remote Topic Manager,
 which is currently under-going the approval process for release.
 We will provide an additional example once the module is public.
+
+## Docker
+
+A docker image for deploying Kimera-Multi is also provided. Please refer to the README in the `docker` subdirectory for details.
 
 ## Citation
 
