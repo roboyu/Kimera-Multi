@@ -4,11 +4,11 @@
 # # 2: Path for groundtruth files [for evo]
 # # 3: time of dataset [for evo]
 ROBOT_NAMES=("acl_jackal" "acl_jackal2" "sparkal1" "sparkal2" "hathor" "thoth")
-# source ~/miniconda3/bin/activate env3_9
+source ~/miniconda3/bin/activate env3_9
 
-# if [ $# -gt 2 ]; then
-#     DATE="$(echo "$3" | cut -c1-2)$(echo "$3" | cut -c4-5)"
-# fi
+if [ $# -gt 2 ]; then
+    DATE="$(echo "$3" | cut -c1-2)$(echo "$3" | cut -c4-5)"
+fi
 while true; do
     for robot_name in "${ROBOT_NAMES[@]}"; do
         # 查找所有匹配的文件并按修改时间排序
@@ -27,12 +27,13 @@ while true; do
                     rm "$file"
                 fi
             done
-            # if [ $# -gt 2 ]; then
-            #     echo "APE: ${robot_name}: $(evo_ape tum $2/$DATE/${robot_name}_gt_odom.csv $1/${robot_name}/${max_file} -a)"
-            # fi
+            if [ $# -gt 2 ]; then
+                echo "${max_file}"
+                echo "APE: ${robot_name}: $(evo_ape tum $2${DATE}/modified_${robot_name}_gt_odom.tum ${max_file} -a)"
+            fi
         fi
     done
 
     # 等待1分钟（60秒）
-    sleep 60
+    sleep 10
 done
