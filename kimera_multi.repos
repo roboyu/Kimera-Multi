@@ -79,8 +79,6 @@ repositories:
     type: git
     url: git@github.com:RonghaiHe/Kimera-VIO.git
     version: master
-    url: git@github.com:RonghaiHe/Kimera-VIO.git
-    version: feature/prerelease
   mesh_rviz_plugins:
     type: git
     url: git@github.com:MIT-SPARK/mesh_rviz_plugins.git

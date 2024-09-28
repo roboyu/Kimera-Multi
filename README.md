@@ -5,11 +5,6 @@ This is a **forked repository**(Special for Ubuntu 18.04). Here are some changes
 
 **Important**: `pose_graph_tools` needs cmake3.16 while the latest version in Ubuntu 18.04 installed by `apt` is cmake3.10, so change the cmake minimum version to 3.10 or install cmake from the repository
 
-This is a **forked repository**. Here are some changes(updating):
-
-2024/08/26:
-- Add new branch [ubuntu18](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy in Ubuntu 18.04
-
 2024/05/03:
 - Add `examples/del_poses_files.sh` to retain the latest and oldest `kimera_distributed_poses_xxx.csv`.
 - Modify 1014-example.yaml to run `examples/del_poses_files.sh` simutaneously
