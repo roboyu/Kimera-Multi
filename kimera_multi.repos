@@ -57,11 +57,11 @@ repositories:
     version: main
   kimera_pgmo:
     type: git
-    url: git@github.com:MIT-SPARK/Kimera-PGMO.git
+    url: git@github.com:RonghaiHe/Kimera-PGMO.git
     version: master
   kimera_ros:
     type: git
-    url: git@github.com:MIT-SPARK/Kimera-VIO-ROS.git
+    url: git@github.com:RonghaiHe/Kimera-VIO-ROS.git
     version: master
   kimera_rpgo:
     type: git
@@ -77,8 +77,8 @@ repositories:
     version: feature/noetic_fixes
   kimera_vio:
     type: git
-    url: git@github.com:MIT-SPARK/Kimera-VIO.git
-    version: feature/prerelease
+    url: git@github.com:RonghaiHe/Kimera-VIO.git
+    version: master
   mesh_rviz_plugins:
     type: git
     url: git@github.com:MIT-SPARK/mesh_rviz_plugins.git
