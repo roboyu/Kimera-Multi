@@ -1,3 +1,10 @@
+This is a **forked repository**(Special for Ubuntu 18.04). Here are some changes:
+
+2024/08/26:
+- Modify `Kimera-RPGO` and `Kimera-VIO-ROS`
+
+**Important**: `pose_graph_tools` needs cmake3.16 while the latest version in Ubuntu 18.04 installed by `apt` is cmake3.10, so change the cmake minimum version to 3.10 or install cmake from the repository
+
 This is a **forked repository**. Here are some changes(updating):
 
 2024/08/26:
