@@ -72,7 +72,8 @@ def main(flag_single=0, retry_count=10):
         # newest_file_num = 0
     
     attempt = 0
-    while attempt < retry_count:   
+    while attempt < retry_count:
+        start_time = time.time()
         try:
             while True:
                 for num in range(ROBOT_NUM):
@@ -187,7 +188,12 @@ def main(flag_single=0, retry_count=10):
                 break
             else:
                 print(f'The {attempt}/{retry_count} Retrying...')
-            
+
+        # 计算剩余的睡眠时间
+        elapsed_time = time.time() - start_time
+        sleep_time = max(0, INTERVAL - elapsed_time)
+        time.sleep(sleep_time)
+
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         print("Single mode")
