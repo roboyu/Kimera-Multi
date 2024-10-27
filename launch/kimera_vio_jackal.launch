@@ -33,7 +33,8 @@
   <arg name="log_imu_data"            value="true"/>
   <arg name="should_use_sim_time"     default="false"/>
   <arg name="params_folder"           value="$(find kimera_multi)/params/D455" />
-  <arg name="log_output_path"         value="$(find kimera_multi)/logs" if="$(arg log_output)" />
+  <arg name="log_output_path"         default="$(find kimera_multi)/logs" if="$(arg log_output)" />
+  <!-- <arg name="log_output_path"         default="$(find kimera_multi)/logs" if="$(arg log_output)" /> -->
   <arg name="path_to_vocab"           default="$(find kimera_multi_lcd)/vocab/mit_voc.yml"/>
   <!-- <arg name="path_to_vocab"           default="$(find kimera_vio)/vocabulary/ORBvoc.yml"/> -->
 

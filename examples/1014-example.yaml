@@ -1,5 +1,11 @@
 session_name: kimera-distributed-example
 
+# Input:
+# CATKIN_WS: workspace of catkin
+# DATA_PATH: directory to save dataset(rosbag)
+# LOG_DIR: directory to save logs
+# NAME_TIME: name of the dataset
+
 environment:
   ROBOT0: "acl_jackal"
   ROBOT1: "acl_jackal2"
@@ -31,6 +37,12 @@ windows:
     - mkdir -p $LOG_DIR/$ROBOT3/distributed
     - mkdir -p $LOG_DIR/$ROBOT4/distributed
     - mkdir -p $LOG_DIR/$ROBOT5/distributed
+    - mkdir -p $LOG_DIR/$ROBOT0/single
+    - mkdir -p $LOG_DIR/$ROBOT1/single
+    - mkdir -p $LOG_DIR/$ROBOT2/single
+    - mkdir -p $LOG_DIR/$ROBOT3/single
+    - mkdir -p $LOG_DIR/$ROBOT4/single
+    - mkdir -p $LOG_DIR/$ROBOT5/single
     - sleep 15;
 
   panes:
@@ -62,12 +74,12 @@ windows:
     - sleep 15;
 
   panes:
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT1 robot_id:=1 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT2 robot_id:=2 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT3 robot_id:=3 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT4 robot_id:=4 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT5 robot_id:=5 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT0/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT1 robot_id:=1 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT1/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT2 robot_id:=2 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT2/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT3 robot_id:=3 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT3/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT4 robot_id:=4 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT4/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT5 robot_id:=5 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT5/single
 
 - window_name: data
   focus: true  
@@ -86,4 +98,4 @@ windows:
     - roscore
     - source ~/miniconda3/bin/activate env3_9; python $CATKIN_WS/src/kimera_multi/examples/evo_real_time.py
     # - bash del_poses_files.sh $LOG_DIR $DATA_PATH/Kimera-Multi-Public-Data/ground_truth/ $NAME_TIME
-    - rosnode kill -a \
+    - rosnode kill -a  & pkill -f evo_real_time.py\

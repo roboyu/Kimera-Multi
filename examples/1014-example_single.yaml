@@ -1,0 +1,33 @@
+session_name: kimera-vio-example
+
+# Input:
+# CATKIN_WS: workspace of catkin
+# DATA_PATH: directory to save dataset(rosbag)
+# LOG_DIR: directory to save logs
+# NAME_TIME: name of the dataset
+
+environment:
+  ROBOT0: "acl_jackal"
+  ROSBAG0: "$DATA_PATH/${NAME_TIME}_acl_jackal.bag"
+  RATE: "1.0"
+  # NUM_ROBOTS: "6"
+  # BOW_SKIP_NUM: "3"
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: $ROBOT0
+  focus: true  
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - rm -rf $LOG_DIR/
+    - mkdir -p $LOG_DIR/$ROBOT0/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT0/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG0 input_ns:=$ROBOT0 output_ns:=$ROBOT0 rate:=$RATE
+    - roscore
+    - source ~/miniconda3/bin/activate env3_9; python $CATKIN_WS/src/kimera_multi/examples/evo_real_time.py 1
+    - rosnode kill -a  & pkill -f evo_real_time.py\

@@ -1,30 +1,41 @@
-This is a **forked repository**. Here are some changes(updating):
+This is a **forked repository**. To run it, use `run.sh` in directory `/examples` so as to effectively run `1014-example.yaml`:
+```shell
+# To run Kimera-Multi
+bash run.sh
 
-2024/09:
-- Change output format(TUM)
-- Add evo evaluation in examples
+# To run KimeraVIO for single robot
+bash run.sh 0
+```
 
-2024/08:
-- Add new branch [ubuntu18](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy in Ubuntu 18.04
+Here are some changes or new features(updating):
 
-2024/05/03:
-- Add `examples/del_poses_files.sh` to retain the latest and oldest `kimera_distributed_poses_xxx.csv`.
-- Modify 1014-example.yaml to run `examples/del_poses_files.sh` simutaneously
+1. Add evo evaluation part
+2. Add an option to run single robot
+3. Add a [branch](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy it in ubuntu 18.04
+
+<details>
+  <summary>See Changelog for more details:</summary>
+
+  2024/10
+  - Modify files for running single robot and logging trajectory.
+
+  2024/09:
+  - Change output format(TUM)
+  - Add evo evaluation in examples
+
+  2024/08:
+  - Add new branch [ubuntu18](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy in Ubuntu 18.04
+
+  2024/05/03:
+  - Add `examples/del_poses_files.sh` to retain the latest and oldest `kimera_distributed_poses_xxx.csv`.
+  - Modify 1014-example.yaml to run `examples/del_poses_files.sh` simutaneously
+</details>
 
 TODO:
-- [ ] Modify codes about output format to run `evo`
+- [x] Modify codes about output format to run `evo`
 - [ ] Add `.yaml` file to run euroc dataset. A [reference](https://github.com/MIT-SPARK/Kimera-Multi/issues/9).
 
-I have added a `run.sh` file to run `1014-example.yaml` without uploading due to privacy and the path below need to be modified:
-```shell
-#!/bin/sh
-DATA_PATH_STR="/path/to/your/datasets"
-NAME_TIME_STR="12_08"
-LOG_DIR_STR=${DATA_PATH_STR}"/log_data_"$NAME_TIME_STR
-
-CATKIN_WS="/path/to/your/workplace" DATA_PATH=${DATA_PATH_STR} LOG_DIR=${LOG_DIR_STR} NAME_TIME=${NAME_TIME_STR} tmuxp load 1014-example.yaml
-```
-Blogs about the [installation process](https://blog.csdn.net/Ben__Ho/article/details/137350202) and the [running process](https://blog.csdn.net/Ben__Ho/article/details/138171249) in Simplified Chinese.
+Blogs about the [installation](https://blog.csdn.net/Ben__Ho/article/details/137350202)([complement](https://blog.csdn.net/Ben__Ho/article/details/142219177)) and the [running](https://blog.csdn.net/Ben__Ho/article/details/138171249) in Simplified Chinese.
 
 ---
 <div align="center">

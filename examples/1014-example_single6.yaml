@@ -1,0 +1,93 @@
+session_name: kimera-vio-example
+
+# Input:
+# CATKIN_WS: workspace of catkin
+# DATA_PATH: directory to save dataset(rosbag)
+# LOG_DIR: directory to save logs
+# NAME_TIME: name of the dataset
+
+environment:
+  ROBOT0: "acl_jackal"
+  ROBOT1: "acl_jackal2"
+  ROBOT2: "sparkal1"
+  ROBOT3: "sparkal2"
+  ROBOT4: "hathor"
+  ROBOT5: "thoth"
+  ROSBAG0: "$DATA_PATH/${NAME_TIME}_acl_jackal.bag"
+  ROSBAG1: "$DATA_PATH/${NAME_TIME}_acl_jackal2.bag"
+  ROSBAG2: "$DATA_PATH/${NAME_TIME}_sparkal1.bag"
+  ROSBAG3: "$DATA_PATH/${NAME_TIME}_sparkal2.bag"
+  ROSBAG4: "$DATA_PATH/${NAME_TIME}_hathor.bag"
+  ROSBAG5: "$DATA_PATH/${NAME_TIME}_thoth.bag"
+  RATE: "1.0"
+  # NUM_ROBOTS: "6"
+  # BOW_SKIP_NUM: "3"
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: acl_jackal
+  focus: true  
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - rm -rf $LOG_DIR/
+    - mkdir -p $LOG_DIR/$ROBOT0/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT0/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG0 input_ns:=$ROBOT0 output_ns:=$ROBOT0 rate:=$RATE
+    - roscore
+    - sleep 15; source ~/miniconda3/bin/activate env3_9; python $CATKIN_WS/src/kimera_multi/examples/evo_real_time.py 0
+    - rosnode kill -a & pkill -f evo_real_time.py\
+
+- window_name: acl_jackal2
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$ROBOT1/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT1 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT1/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG1 input_ns:=$ROBOT1 output_ns:=$ROBOT1 rate:=$RATE
+
+- window_name: sparkal1
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$ROBOT2/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT2 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT2/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG2 input_ns:=$ROBOT2 output_ns:=$ROBOT2 rate:=$RATE
+    
+- window_name: sparkal2
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$ROBOT3/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT3 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT3/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG2 input_ns:=$ROBOT3 output_ns:=$ROBOT3 rate:=$RATE
+    
+- window_name: hathor
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$ROBOT4/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT4 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT4/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG2 input_ns:=$ROBOT4 output_ns:=$ROBOT4 rate:=$RATE  
+
+- window_name: thoth
+  layout: tiled  
+  shell_command_before:
+    - source $CATKIN_WS/devel/setup.bash
+    - mkdir -p $LOG_DIR/$ROBOT5/single
+
+  panes:
+    - sleep 15; roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT5 robot_id:=0 use_d455:=true multirobot:=false lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT5/single
+    - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG2 input_ns:=$ROBOT5 output_ns:=$ROBOT5 rate:=$RATE
