@@ -9,7 +9,7 @@ bash run.sh 0
 
 Here are some changes or new features(updating):
 
-1. Add evo evaluation part
+1. Add  trajectory evaluation and visualization by `evo`
 2. Add an option to run single robot
 3. Add a [branch](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy it in ubuntu 18.04
 
@@ -18,6 +18,7 @@ Here are some changes or new features(updating):
 
   2024/10
   - Modify files for running single robot and logging trajectory.
+  - Add trajectory comparison and visualization
 
   2024/09:
   - Change output format(TUM)
@@ -34,6 +35,7 @@ Here are some changes or new features(updating):
 TODO:
 - [x] Modify codes about output format to run `evo`
 - [ ] Add `.yaml` file to run euroc dataset. A [reference](https://github.com/MIT-SPARK/Kimera-Multi/issues/9).
+- [ ] Asynchronous operation for evaluation by `evo`
 
 Blogs about the [installation](https://blog.csdn.net/Ben__Ho/article/details/137350202)([complement](https://blog.csdn.net/Ben__Ho/article/details/142219177)) and the [running](https://blog.csdn.net/Ben__Ho/article/details/138171249) in Simplified Chinese.
 

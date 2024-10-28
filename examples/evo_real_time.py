@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import signal
 import os
 import glob
@@ -8,7 +9,10 @@ import pandas as pd
 from evo.core import metrics
 from evo.tools import file_interface
 from evo.core import sync
-import matplotlib.pyplot as plt
+from evo.tools import plot
+from evo.tools.settings import SETTINGS
+SETTINGS.plot_usetex = False
+plot.apply_settings(SETTINGS)
 
 # 设置目录和前缀
 LOG_DIR = '/media/sysu/Data/multi_robot_datasets/kimera_multi_datasets/log_data_12_08/'
@@ -23,13 +27,6 @@ traj_ref = [None] * ROBOT_NUM
 
 if not os.path.exists(APE_DIR):
     os.makedirs(APE_DIR)
-
-# 关闭所有现有的图形窗口
-plt.close('all')
-
-# 创建一个子图
-fig, ax = plt.subplots(2, 3, figsize=(15, 10))
-# fig.suptitle('APE Translation')
 
 ape_dict = {}
 for num in range(ROBOT_NUM):
@@ -80,9 +77,12 @@ def main(flag_single=0, retry_count=10):
 
     attempt = 0
     while attempt < retry_count:
-        start_time = time.time()
+
         try:
             while True:
+                start_time = time.time()
+                plt.close('all')
+                ad_traj_by_label = [{} for _ in range(ROBOT_NUM)]
                 for num in range(ROBOT_NUM):
                     LOG_DIR_ROBOT = os.path.join(
                         LOG_DIR, ROBOT_NAMES[num], TYPE_DIR)
@@ -150,6 +150,9 @@ def main(flag_single=0, retry_count=10):
                     traj_est_aligned.align(
                         traj_ref_, correct_scale=False, correct_only_scale=False)
 
+                    ad_traj_by_label[num] = {
+                        "est": traj_est_aligned, "ref": traj_ref_}
+
                     # 计算APE
                     data = (traj_ref_, traj_est_aligned)
                     ape_trans.process_data(data)
@@ -161,6 +164,7 @@ def main(flag_single=0, retry_count=10):
                         [ape_dict[ROBOT_NAMES[num]], new_row], ignore_index=True)
 
                 # Draw the APE
+                fig, ax = plt.subplots(2, 3, figsize=(15, 10))
                 ax2 = [None] * ROBOT_NUM
                 for num in range(ROBOT_NUM):
                     ax[int(num/3), int(num % 3)].plot(ape_dict[ROBOT_NAMES[num]]['ts'],
@@ -183,8 +187,8 @@ def main(flag_single=0, retry_count=10):
                     if num % 3 == 2:
                         ax2[num].set_ylabel('number of poses')
 
-                plt.draw()
-                plt.pause(INTERVAL)
+                # plt.draw()
+                # plt.pause(1.5)
                 plt.savefig(os.path.join(APE_DIR, 'ape.jpg'))
                 for num in range(ROBOT_NUM):
                     ax2[num].clear()
@@ -192,8 +196,34 @@ def main(flag_single=0, retry_count=10):
                     ax[int(num/3), int(num % 3)].clear()
                     # ax2[num].line = []
                     # ax[int(num/3), int(num%3)].line = []
+                plt.close(fig)
 
+                fig_, ax_ = plt.subplots(2, 3, figsize=(15, 10))
+                fig_.clear()
+                # SETTINGS.plot_xyz_realistic = False
+                for num in range(ROBOT_NUM):
+                    if ad_traj_by_label[num]:
+                        ax_traj = plot.prepare_axis(
+                            fig_, plot.PlotMode.xy, subplot_arg=231+num)
+                        ax_traj.set_title(ROBOT_NAMES[num])
+                        plot.traj(
+                            ax_traj, plot.PlotMode.xy, ad_traj_by_label[num]['est'], label='est', color='blue', plot_start_end_markers=True)
+                        plot.traj(
+                            ax_traj, plot.PlotMode.xy, ad_traj_by_label[num]['ref'], label='ref', color='green', plot_start_end_markers=True)
+                        plot.draw_correspondence_edges(
+                            ax_traj, ad_traj_by_label[num]['est'], ad_traj_by_label[num]['ref'], plot.PlotMode.xy, alpha=0.5)
+                # plt.draw()
+                # plt.pause(1.5)
+                plt.savefig(os.path.join(APE_DIR, 'traj.jpg'))
+                plt.close(fig_)
                 print('-'*10)
+
+                # 计算剩余的睡眠时间
+                elapsed_time = time.time() - start_time
+                if elapsed_time < INTERVAL:
+                    sleep_time = INTERVAL - elapsed_time
+                    time.sleep(sleep_time)
+                    print(f'Sleeping for {sleep_time} seconds')
 
         except Exception as e:
             # 输出错误原因和对应的行
@@ -212,11 +242,6 @@ def main(flag_single=0, retry_count=10):
             else:
                 print(f'The {attempt}/{retry_count} Retrying...')
 
-        # 计算剩余的睡眠时间
-        elapsed_time = time.time() - start_time
-        sleep_time = max(0, INTERVAL - elapsed_time)
-        time.sleep(sleep_time)
-
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -225,3 +250,4 @@ if __name__ == '__main__':
     else:
         print("Distributed mode")
         main()
+    # main(1)
