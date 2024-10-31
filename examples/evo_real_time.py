@@ -70,9 +70,11 @@ def main(flag_single=0, retry_count=10):
     global newest_file_num
 
     TYPE_DIR = 'distributed/'
+    JUDGE_IF_KILLED = 10010
     newest_file = None
     if flag_single:
         TYPE_DIR = 'single/'
+        JUDGE_IF_KILLED = 3010
         # newest_file_num = 0
 
     attempt = 0
@@ -133,7 +135,9 @@ def main(flag_single=0, retry_count=10):
                         # 获取文件名称的数字部分
                         newest_file_num = int(
                             newest_file.split('_')[-1].split('.')[0])
-
+                    if newest_file_num > JUDGE_IF_KILLED:
+                        raise ValueError(
+                            f'Killed for {newest_file_num} > {JUDGE_IF_KILLED}')
                     print(
                         f'Processing {newest_file_num} of {ROBOT_NAMES[num]}')
                     # 获取文件内容行数
