@@ -1,5 +1,8 @@
-This is a **forked repository**. To run it, use `run.sh` in directory `/examples` so as to effectively run `1014-example.yaml`:
+This is a **forked repository**. To run it, use `run_multi_times.sh` or `run.sh` in directory `/examples` so as to effectively run `1014-example.yaml`(some parameters in the file, such as path, need to be modified, and [tmuxp](https://github.com/tmux-python/tmuxp) is required):
 ```shell
+# To run Kimera-Multi for multiple times
+bash run_multi_times.sh
+
 # To run Kimera-Multi
 bash run.sh
 
@@ -7,9 +10,9 @@ bash run.sh
 bash run.sh 0
 ```
 
-Here are some changes or new features(updating):
+Here are main changes or new features(still updating):
 
-1. Add  trajectory evaluation and visualization by `evo`
+1. Add trajectory evaluation and visualization by `evo`
 2. Add an option to run single robot
 3. Add a [branch](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy it in ubuntu 18.04
 
@@ -19,6 +22,7 @@ Here are some changes or new features(updating):
   2024/10
   - Modify files for running single robot and logging trajectory.
   - Add trajectory comparison and visualization
+  - Automatically run it multiple times based on `run_multi_times.sh`
 
   2024/09:
   - Change output format(TUM)
