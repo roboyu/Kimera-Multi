@@ -31,6 +31,7 @@ windows:
   layout: tiled  
   shell_command_before:
     - source $CATKIN_WS/devel/setup.bash
+    - rm -rf $LOG_DIR
     - mkdir -p $LOG_DIR/$ROBOT0/distributed
     - mkdir -p $LOG_DIR/$ROBOT1/distributed
     - mkdir -p $LOG_DIR/$ROBOT2/distributed
