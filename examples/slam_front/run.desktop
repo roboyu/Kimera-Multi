@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Name=SLAM
+Exec=gnome-terminal -- bash -c "python3 /media/sysu/new_volume1/80G/sysu/herh/kimera_multi_ws/src/kimera_multi/examples/slam_front/slam_front.py; read"
+Icon=/media/sysu/new_volume1/80G/sysu/herh/kimera_multi_ws/src/kimera_multi/examples/slam_front/background.jpeg
+Type=Application
+Terminal=false
