@@ -1156,7 +1156,7 @@
         <mxCell id="1-i565KOY_GxOukXeuxw-122" value="kimera_multi_lcd/" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1-i565KOY_GxOukXeuxw-114">
           <mxGeometry x="10" y="-2" width="120" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="1-i565KOY_GxOukXeuxw-204" style="edgeStyle=orthogonalEdgeStyle;shape=connector;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1-i565KOY_GxOukXeuxw-114" target="1-i565KOY_GxOukXeuxw-206">
+        <mxCell id="1-i565KOY_GxOukXeuxw-204" style="edgeStyle=orthogonalEdgeStyle;shape=connector;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1-i565KOY_GxOukXeuxw-114">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="790" y="408" />
