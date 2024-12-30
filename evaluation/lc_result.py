@@ -64,8 +64,8 @@ def calculate_relative_pose(pose1, pose2):
     # Convert relative rotation matrix back to quaternion
     q_rel = R.from_matrix(R_rel).as_quat()
 
-    # Calculate relative translation
-    t_rel = t2 - R_rel @ t1
+    # Calculate relative translation (2 local coordinate frame)
+    t_rel = t2 - t1
 
     # Calculate distance
     distance = np.linalg.norm(t_rel)
@@ -101,7 +101,7 @@ def main(args):
 
     dataset_name = DATE2DATASET[args.date]
 
-    # Check if exists the file for date
+    # Check if exists the file for dateoutput_file
     if not os.path.exists(f'{args.date}'):
         os.makedirs(f'{args.date}')
     else:
@@ -112,10 +112,10 @@ def main(args):
                 os.remove(file_path)
 
     # Construct paths inside main function
-    loop_closure_file_prefix = f'{args.basic_path}/{dataset_name}/log_data_{args.date}'
-    keyframes_files_prefix = f'{args.basic_path}/{dataset_name}/log_data_{args.date}'
+    loop_closure_file_prefix = f'{args.basic_path}/{dataset_name}/log_data_{args.date[:2]}_{args.date[2:]}'
+    keyframes_files_prefix = f'{args.basic_path}/{dataset_name}/log_data_{args.date[:2]}_{args.date[2:]}/'
     groundtruth_files_prefix = f'{args.basic_path}/Kimera-Multi-Public-Data/ground_truth/{args.date}/'
-    output_file = f'lc_results_{args.date}_'
+    output_file = f'./{args.date}/lc_results_{args.date}_'
 
     # Read the loop closure data
     loop_closure_files = [
@@ -154,7 +154,9 @@ def main(args):
         with open(output_file + ID2ROBOT[i] + '.csv', 'w') as f:
             # Write the CSV header
             f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,"
-                    "Distance,Rotation Angle (radians),Estimated Distance,Estimated Angle(Radian),"
+                    "Distance,Rotation Angle (radiansinter_csv_filename),"
+                    "norm_bow_score,mono_inliers,stereo_inliers,"  # Added new fields
+                    "Estimated Distance,Estimated Angle(Radian),"
                     "Timestamp 1,Timestamp 2,"
                     "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
                     "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
@@ -207,6 +209,14 @@ def main(args):
                             gt_pose1[1], gt_pose2[1]], '--', color=color, alpha=0.6, linewidth=1.0)
                         line_collection.append(line[0])
 
+                        # Add distance value in the middle of the line
+                        if distance >= 50:
+                            mid_point = (gt_pose1 + gt_pose2) / 2
+                            ax.text(mid_point[0], mid_point[1],
+                                    f"{distance:.2f}",
+                                    color=color,
+                                    fontsize=8)
+
                         # Add points for corresponding poses
                         ax.scatter(gt_pose1[0], gt_pose1[1], color=color, marker='o',
                                    s=20, zorder=5, edgecolor='black', linewidth=0.5)
@@ -216,7 +226,10 @@ def main(args):
                         f.write(
                             f"{index},{ID2ROBOT[int(robot1)]},{relative_time1},"
                             f"{ID2ROBOT[int(robot2)]},{relative_time2},"
-                            f"{distance},{angle},{estimated_distance},{estimated_angle},"
+                            f"{distance},{angle},"
+                            # Added new fields
+                            f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
+                            f"{estimated_distance},{estimated_angle},"
                             f"{timestamp1},{timestamp2},"
                             # GT pose1
                             f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
@@ -229,7 +242,10 @@ def main(args):
                             f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
                     else:
                         f.write(
-                            f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No GT data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
+                            f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No GT data,,"
+                            # Added new fields
+                            f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
+                            f"{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
                 else:
                     f.write(
                         f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No keyframe data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
