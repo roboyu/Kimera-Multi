@@ -1,0 +1,59 @@
+<launch>
+  
+  <!-- Set up image processing for each robot -->
+  <!-- Robot 1:= acl_jackal -->
+  <node pkg="image_transport" type="republish" name="decompress_acl_jackal" output="screen" 
+        args="compressed in:=/acl_jackal/forward/color/image_raw raw out:=/acl_jackal/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_acl_jackal" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/acl_jackal/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 2:= acl_jackal2 -->
+  <node pkg="image_transport" type="republish" name="decompress_acl_jackal2" output="screen" 
+        args="compressed in:=/acl_jackal2/forward/color/image_raw raw out:=/acl_jackal2/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_acl_jackal2" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/acl_jackal2/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 3:= sparkal1 -->
+  <node pkg="image_transport" type="republish" name="decompress_sparkal1" output="screen" 
+        args="compressed in:=/sparkal1/forward/color/image_raw raw out:=/sparkal1/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_sparkal1" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/sparkal1/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 4:= sparkal2 -->
+  <node pkg="image_transport" type="republish" name="decompress_sparkal2" output="screen" 
+        args="compressed in:=/sparkal2/forward/color/image_raw raw out:=/sparkal2/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_sparkal2" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/sparkal2/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 5:= hathor -->
+  <node pkg="image_transport" type="republish" name="decompress_hathor" output="screen" 
+        args="compressed in:=/hathor/forward/color/image_raw raw out:=/hathor/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_hathor" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/hathor/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 6:= thoth -->
+  <node pkg="image_transport" type="republish" name="decompress_thoth" output="screen" 
+        args="compressed in:=/thoth/forward/color/image_raw raw out:=/thoth/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_thoth" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/thoth/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 7:= apis -->
+  <node pkg="image_transport" type="republish" name="decompress_apis" output="screen" 
+        args="compressed in:=/apis/forward/color/image_raw raw out:=/apis/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_apis" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/apis/forward/color/image_raw_raw"/>
+  </node>
+
+  <!-- Robot 8:= sobek -->
+  <node pkg="image_transport" type="republish" name="decompress_sobek" output="screen" 
+        args="compressed in:=/sobek/forward/color/image_raw raw out:=/sobek/forward/color/image_raw_raw" />
+  <node pkg="image_view" type="extract_images" name="extract_sobek" respawn="false" output="screen" cwd="ROS_HOME">
+    <remap from="image" to="/sobek/forward/color/image_raw_raw"/>
+  </node>
+</launch>
