@@ -1,3 +1,14 @@
+'''
+Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights Reserved
+Author: Ronghai He
+Date: 2024-12-26 20:31:33
+LastEditors: RonghaiHe hrhkjys@qq.com
+LastEditTime: 2025-01-08 12:20:32
+FilePath: /src/kimera_multi/evaluation/lc_result.py
+Version: 1.3.0
+Description: To log the loop closure result with groundtruth pose and visualize them
+
+'''
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
 import numpy as np

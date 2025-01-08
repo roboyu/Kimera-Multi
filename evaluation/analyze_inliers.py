@@ -1,3 +1,15 @@
+'''
+Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights Reserved
+Author: Ronghai He
+Date: 2025-01-07 18:07:54
+LastEditors: RonghaiHe && echo , && hrhkjys@qq.com
+LastEditTime: 2025-01-08 12:17:40
+FilePath: /src/kimera_multi/evaluation/analyze_inliers.py
+Version: 1.0.0
+Description: To analyze monocular inliers and stereo inliers from loop closure
+
+'''
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns

@@ -1,3 +1,15 @@
+'''
+Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights Reserved
+Author: Ronghai He
+Date: 2025-12-30 12:19:40
+LastEditors: RonghaiHe && echo , && hrhkjys@qq.com
+LastEditTime: 2025-01-08 12:18:00
+FilePath: /src/kimera_multi/evaluation/extract_lc_images.py
+Version: 1.0.0
+Description: To extract images from rosbag based on Loop closure results (distance > 30m)
+
+'''
+
 #!/usr/bin/env python3
 
 import argparse
