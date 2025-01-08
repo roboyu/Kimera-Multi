@@ -12,16 +12,30 @@ bash run.sh 0
 
 Here are main changes or new features(still updating):
 
-1. Add trajectory evaluation and visualization by `evo`
-2. Add an option to run single robot
+1. Add trajectory evaluation and visualization by `evo` (In `/examples/evo_*` )
+2. Add an option to run single robot simultaneously
 3. Add a [branch](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy it in ubuntu 18.04
+4. Deploy one-key start (In `/examples/slam_front`)
+5. Update `kimera-multi.drawio` file (In `/images`)
+5. Add evaluation for loop closures (Find GT poses, output corresponding images, statistics, etc. in `/evaluation`)
 
 <details>
   <summary>See Changelog for more details:</summary>
 
+  2025/01
+  - Add more evaluation for loop closures (In `/evalution`):
+    - Count monocular inliers and stereo inliers w.r.t. threshold (`10` & `5`) (`analyze_inliers.py`)
+
+  2024/12
+  - Deploy one-key start (In `/example/slam_front`)
+  - Update `kimera-multi.drawio` file (In `/images`)
+  - Add evaluation for loop closures (In `/evalution`):
+    - Find GT poses and output them as files (`lc_result.py`)
+    - Output images from loop closures whose distances > 30 meters (`extract_lc_images.py` & `extract_lc_images.sh`)
+
   2024/10
   - Modify files for running single robot and logging trajectory.
-  - Add trajectory comparison and visualization
+  - Add trajectory comparison and visualization (In `/examples/evo_*`)
   - Automatically run it multiple times based on `run_multi_times.sh`
 
   2024/09:
@@ -40,6 +54,7 @@ TODO:
 - [x] Modify codes about output format to run `evo`
 - [ ] Add `.yaml` file to run euroc dataset. A [reference](https://github.com/MIT-SPARK/Kimera-Multi/issues/9).
 - [ ] Asynchronous operation for evaluation by `evo`
+- [ ] Modify `lc_result.py` to run parallelly
 
 Blogs about the [installation](https://blog.csdn.net/Ben__Ho/article/details/137350202)([complement](https://blog.csdn.net/Ben__Ho/article/details/142219177)) and the [running](https://blog.csdn.net/Ben__Ho/article/details/138171249) in Simplified Chinese.
 
