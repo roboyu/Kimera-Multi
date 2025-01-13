@@ -7,6 +7,8 @@
   <arg name="replay"      default="false" />
   <arg name="verbosity"   default="0"/>
 
+  <arg name="include_pipeline_args" default="false" />
+
   <!-- BoW vector publishing for Kimera-Multi -->
   <arg name="bow_batch_size"          default="10" />
   <arg name="bow_skip_num"            default="2" />
