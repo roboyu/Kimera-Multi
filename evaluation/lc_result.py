@@ -18,6 +18,8 @@ import time
 import argparse
 import os
 import csv
+import subprocess
+from tqdm import tqdm
 
 # Create colormap for distances
 norm = Normalize(vmin=0, vmax=50)  # Normalize distances from 0 to 20 meters
@@ -235,19 +237,23 @@ def main(args):
         inter_lc_rejected_part_data[i] = pd.DataFrame(
             intra_lc_rejected_part_results)
 
-    # Read the ground truth data for all robots
+    # Read the ground truth data for all robots with progress bar
+    print("Loading ground truth data...")
     groundtruth_files = [
         f"{groundtruth_files_prefix}modified_{ID2ROBOT[i]}_gt_odom.tum" for i in range(args.num_robots)
     ]
-    groundtruth_data = {i: read_groundtruth_tum(
-        file) for i, file in enumerate(groundtruth_files)}
+    groundtruth_data = {}
+    for i, file in enumerate(tqdm(groundtruth_files, desc="Reading ground truth")):
+        groundtruth_data[i] = read_groundtruth_tum(file)
 
     # Read the keyframes data for all robots, use keyframe's ID mapping timestamp
+    print("Loading keyframe data...")
     keyframes_files = [
         f"{keyframes_files_prefix}{ID2ROBOT[i]}/distributed/kimera_distributed_keyframes.csv" for i in range(args.num_robots)
     ]
-    keyframes_data = {i: pd.read_csv(
-        file) for i, file in enumerate(keyframes_files)}
+    keyframes_data = {}
+    for i, file in enumerate(tqdm(keyframes_files, desc="Reading keyframes")):
+        keyframes_data[i] = pd.read_csv(file)
 
     # Create a dictionary to store the keyframe timestamps by ID for each robot
     keyframes_dict = {
@@ -260,7 +266,9 @@ def main(args):
         0) for i in range(args.num_robots)]
 
     line_collection = []
-    for i in range(args.num_robots):
+    # Process each robot's data with progress bar
+    print("Processing robot data...")
+    for i in tqdm(range(args.num_robots), desc="Processing robots"):
         with open(intra_rejected_part_output_file + ID2ROBOT[i] + '.csv', 'w') as f:
             # Write the CSV header
             f.write("Loop Closure Number,Relative Time 1,Relative Time 2,"
@@ -275,7 +283,9 @@ def main(args):
                     "Relative Rotation Quaternion, Relative Translation Vector,"
                     "Estimated Relative Rotation,Estimated Relative Translation\n")
 
-            for index, row in inter_lc_rejected_part_data[i].iterrows():
+            for index, row in tqdm(inter_lc_rejected_part_data[i].iterrows(),
+                                   desc=f"Processing rejected data for {ID2ROBOT[i]}",
+                                   leave=False):
                 keyframe_id1 = row['pose1']
                 keyframe_id2 = row['pose2']
 
@@ -352,7 +362,9 @@ def main(args):
             # f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,Distance,Rotation Angle (radians),Estimated Distance, Estimated Angle(Radian),Timestamp 1,Timestamp 2,Relative Rotation Quaternion,Relative Translation Vector,Estimated Relative Rotation, Estimated Relative Translation\n")
 
             # Iterate through intra-loop closure data to calculate relative poses
-            for index, row in intra_lc_data[i].iterrows():
+            for index, row in tqdm(intra_lc_data[i].iterrows(),
+                                   desc=f"Processing intra-LC for {ID2ROBOT[i]}",
+                                   leave=False):
                 keyframe_id1 = row['pose1']
                 keyframe_id2 = row['pose2']
 
@@ -451,7 +463,9 @@ def main(args):
             # f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,Distance,Rotation Angle (radians),Estimated Distance, Estimated Angle(Radian),Timestamp 1,Timestamp 2,Relative Rotation Quaternion,Relative Translation Vector,Estimated Relative Rotation, Estimated Relative Translation\n")
 
             # Iterate through loop closure data to calculate relative poses
-            for index, row in inter_lc_data[i].iterrows():
+            for index, row in tqdm(inter_lc_data[i].iterrows(),
+                                   desc=f"Processing inter-LC for {ID2ROBOT[i]}",
+                                   leave=False):
                 robot1 = row['robot1']
                 robot2 = row['robot2']
                 keyframe_id1 = row['pose1']

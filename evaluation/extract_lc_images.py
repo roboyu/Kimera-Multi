@@ -2,8 +2,8 @@
 Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights Reserved
 Author: Ronghai He
 Date: 2025-12-30 12:19:40
-LastEditors: RonghaiHe && echo , && hrhkjys@qq.com
-LastEditTime: 2025-01-08 12:18:00
+LastEditors: RonghaiHe hrhkjys@qq.com
+LastEditTime: 2025-01-19 23:00:59
 FilePath: /src/kimera_multi/evaluation/extract_lc_images.py
 Version: 1.0.0
 Description: To extract images from rosbag based on Loop closure results (distance > 30m)
@@ -16,6 +16,7 @@ import argparse
 import pandas as pd
 import os
 import subprocess
+from tqdm import tqdm
 import cv2
 import time
 import numpy as np
@@ -44,9 +45,6 @@ def parse_args():
                         help='Date of the dataset (e.g., 1207, 1014, 1208)')
     parser.add_argument('--threshold', type=float, default=30.0,
                         help='Distance threshold for LC results')
-    parser.add_argument('--image_topic', type=str,
-                        default='/acl_jackal/forward/color/image_raw/compressed',
-                        help='Image topic name')
     parser.add_argument('--basic_bag_path', type=str,
                         default='/media/sysu/Data/multi_robot_datasets/kimera_multi_datasets/',
                         help='Basic path to the rosbag file')
@@ -191,7 +189,8 @@ def main():
 
     # Read the LC results CSV files
     all_high_distance_rows = []
-    for robot_name in ID2ROBOT:
+    print("Reading CSV files...")
+    for robot_name in tqdm(ID2ROBOT, desc="Processing robots"):
         inter_csv_filename = '/media/sysu/new_volume1/80G/sysu/herh/kimera_multi_ws/src/kimera_multi/evaluation' + \
             f'/{args.date}/inter_lc_results_{args.date}_{robot_name}.csv'
         if os.path.exists(inter_csv_filename):
@@ -227,9 +226,11 @@ def main():
     output_dir = '/media/sysu/new_volume1/80G/sysu/herh/kimera_multi_ws/src/kimera_multi/evaluation/' + \
         f'lc_images_{args.date}'
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(output_dir + '/temp_images', exist_ok=True)
 
-    # Process each loop closure
-    for row in all_high_distance_rows:
+    # Process each loop closure with progress bar
+    print("\nProcessing loop closures...")
+    for row in tqdm(all_high_distance_rows, desc="Extracting images"):
         timestamp1 = row['Timestamp 1']
         timestamp2 = row['Timestamp 2']
         number = row['Loop Closure Number']
@@ -279,7 +280,8 @@ def main():
             output_image_path
         )
 
-    print(f'Processed {len(all_high_distance_rows)} loop closures')
+    print(
+        f'Successfully processed {len(all_high_distance_rows)} loop closures')
 
 
 if __name__ == '__main__':
