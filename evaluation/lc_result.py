@@ -3,7 +3,7 @@ Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rig
 Author: Ronghai He
 Date: 2024-12-26 20:31:33
 LastEditors: RonghaiHe hrhkjys@qq.com
-LastEditTime: 2025-01-08 12:20:32
+LastEditTime: 2025-01-21 17:54:07
 FilePath: /src/kimera_multi/evaluation/lc_result.py
 Version: 1.3.0
 Description: To log the loop closure result with groundtruth pose and visualize them
@@ -20,6 +20,11 @@ import os
 import csv
 import subprocess
 from tqdm import tqdm
+import multiprocessing
+from functools import partial
+from multiprocessing import Manager, Lock
+import matplotlib
+matplotlib.use('Agg')  # Set backend to non-interactive
 
 # Create colormap for distances
 norm = Normalize(vmin=0, vmax=50)  # Normalize distances from 0 to 20 meters
@@ -102,6 +107,8 @@ def parse_args():
                         help='Base path to the multi-robot datasets')
     parser.add_argument('--num_robots', type=int, default=6,
                         help='Number of robots in the dataset, often 6 or 8')
+    parser.add_argument('--threshold', type=float, default=50,
+                        help='Threshold for loop closure distances')
     return parser.parse_args()
 
 
@@ -189,7 +196,365 @@ def parse_csv_files(loop_closure_file, lcd_status_file, lcd_result_file):
     return inter_lc, intra_lc, intra_lc_rejected_part
 
 
+def process_robot_data(i, args, shared_dict,
+                       loop_closure_files, lcd_status_files, lcd_result_files,
+                       groundtruth_data, keyframes_data, keyframes_dict, earliest_timestamp,
+                       inter_output_file, intra_output_file, intra_rejected_part_output_file):
+    """
+    Process data for a single robot without plot lock
+    i: Robot index
+    Processing steps for each robot:
+    1. Process inter-robot loop closures
+    2. Process intra-robot loop closures
+    3. Process rejected loop closures
+    """
+    results = {
+        'lines': [],
+        'points': [],
+        'text': [],
+        'trajectory': None
+    }
+
+    # Process CSV files
+    inter_lc_results, intra_lc_results, intra_lc_rejected_part_results = parse_csv_files(
+        loop_closure_files[i], lcd_status_files[i], lcd_result_files[i])
+
+    # Create DataFrames
+    robot_data = {
+        'inter_lc': pd.DataFrame(inter_lc_results),
+        'intra_lc': pd.DataFrame(intra_lc_results),
+        'rejected': pd.DataFrame(intra_lc_rejected_part_results)
+    }
+
+    # Process rejected data in separate file
+    process_rejected_data(i, robot_data['rejected'], groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, intra_rejected_part_output_file)
+
+    # Process intra LC data
+    process_intra_lc_data(i, robot_data['intra_lc'], groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, intra_output_file, results)
+
+    # Process inter LC data
+    process_inter_lc_data(i, robot_data['inter_lc'], groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, inter_output_file, results)
+
+    # Store results in shared dictionary without lock
+    shared_dict[f'robot_{i}'] = {
+        'lines': results['lines'],
+        'points': results['points'],
+        'text': results['text'],
+        'trajectory': groundtruth_data[i][['tx', 'ty', 'tz']].values
+    }
+
+    return True
+
+
+def process_rejected_data(i, rejected_df, groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, output_file):
+    """Process rejected data in separate process"""
+    print(f"Processing rejected data for {ID2ROBOT[i]}")
+    with open(output_file + ID2ROBOT[i] + '.csv', 'w') as f:
+        # Write CSV header
+        f.write("Loop Closure Number,Relative Time 1,Relative Time 2,"
+                "Distance,Rotation Angle (radians),"
+                "mono_inliers,stereo_inliers,"  # Added new fields
+                "Estimated Distance,Estimated Angle(Radian),"
+                "Timestamp 1,Timestamp 2,"
+                "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
+                "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
+                "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
+                "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
+                "Relative Rotation Quaternion, Relative Translation Vector,"
+                "Estimated Relative Rotation,Estimated Relative Translation\n")
+
+        for index, row in rejected_df.iterrows():
+            keyframe_id1 = row['pose1']
+            keyframe_id2 = row['pose2']
+
+            timestamp1 = keyframes_dict[i].get(keyframe_id1)
+            timestamp2 = keyframes_dict[i].get(keyframe_id2)
+
+            if timestamp1 is not None and timestamp2 is not None:
+                est_pose1 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id1][[
+                    'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw']].values[0]
+                est_pose2 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id2][[
+                    'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw']].values[0]
+
+                estimated_relative_R, estimated_relative_t, estimated_distance, estimated_angle = calculate_relative_pose(
+                    est_pose1, est_pose2)
+
+                relative_time1 = timestamp1 - \
+                    earliest_timestamp[i]
+                relative_time2 = timestamp2 - \
+                    earliest_timestamp[i]
+
+                gt_pose1 = find_closest_pose(
+                    timestamp1, groundtruth_data[i], tolerance=0.1)
+                gt_pose2 = find_closest_pose(
+                    timestamp2, groundtruth_data[i], tolerance=0.1)
+
+                if gt_pose1 is not None and gt_pose2 is not None:
+
+                    # Calculate the relative pose, distance, and rotation angle
+                    q_rel, t_rel, distance, angle = calculate_relative_pose(
+                        gt_pose1, gt_pose2)
+
+                    f.write(
+                        f"{index},{relative_time1},{relative_time2},"
+                        f"{distance},{angle},"
+                        f"{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},"
+                        # GT pose
+                        f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
+                        f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
+                        # Estimated pose
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
+                else:
+                    f.write(
+                        f"{index},{relative_time1},{relative_time2},"
+                        f"No GT data,,"
+                        f"{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},,,,,,,"
+                        # Estimated pose
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f",,{estimated_relative_R},{estimated_relative_t}\n")
+            else:
+                f.write(
+                    f"{index},,,No keyframe data,,\n")
+
+
+def process_intra_lc_data(i, intra_df, groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, output_file, results):
+    """Process intra LC data in separate process"""
+    print(f"Processing intra data for {ID2ROBOT[i]}")
+    with open(output_file + ID2ROBOT[i] + '.csv', 'w') as f:
+        # Write CSV header
+        f.write("Loop Closure Number,Relative Time 1,Relative Time 2,"
+                "Distance,Rotation Angle (radiansinter_csv_filename),"
+                "mono_inliers,stereo_inliers,"  # Added new fields
+                "Estimated Distance,Estimated Angle(Radian),"
+                "Timestamp 1,Timestamp 2,"
+                "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
+                "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
+                "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
+                "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
+                "Relative Rotation Quaternion,Relative Translation Vector,"
+                "Estimated Relative Rotation,Estimated Relative Translation\n")
+
+        for index, row in intra_df.iterrows():
+            keyframe_id1 = row['pose1']
+            keyframe_id2 = row['pose2']
+
+            timestamp1 = row['timestamp1'] / 1e9
+            timestamp2 = row['timestamp2'] / 1e9
+
+            estimated_relative_R = np.array(
+                [row['qw'], row['qx'], row['qy'], row['qz']])
+            estimated_relative_t = np.array(
+                [row['tx'], row['ty'], row['tz']])
+            estimated_distance = np.linalg.norm(estimated_relative_t)
+            estimated_angle = R.from_quat(estimated_relative_R).magnitude()
+
+            if timestamp1 is not None and timestamp2 is not None:
+                relative_time1 = timestamp1 - earliest_timestamp[i]
+                relative_time2 = timestamp2 - earliest_timestamp[i]
+
+                gt_pose1 = find_closest_pose(
+                    timestamp1, groundtruth_data[i], tolerance=0.1)
+                gt_pose2 = find_closest_pose(
+                    timestamp2, groundtruth_data[i], tolerance=0.1)
+
+                est_pose1 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id1][[
+                    'tx', 'ty', 'tz']].values[0]
+                est_pose2 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id2][[
+                    'tx', 'ty', 'tz']].values[0]
+
+                if gt_pose1 is not None and gt_pose2 is not None:
+
+                    # Calculate the relative pose, distance, and rotation angle
+                    q_rel, t_rel, distance, angle = calculate_relative_pose(
+                        gt_pose1, gt_pose2)
+
+                    color = cmap(norm(distance))
+                    results['lines'].append({
+                        'x': [gt_pose1[0], gt_pose2[0]],
+                        'y': [gt_pose1[1], gt_pose2[1]],
+                        'style': '-.',
+                        'color': color,
+                        'alpha': 0.6,
+                        'linewidth': 1.0
+                    })
+                    # Store points data
+                    results['points'].extend([
+                        {'x': gt_pose1[0], 'y': gt_pose1[1],
+                            'marker': 'o', 'color': color},
+                        {'x': gt_pose2[0], 'y': gt_pose2[1],
+                            'marker': 's', 'color': color}
+                    ])
+
+                    if distance > args.threshold:
+                        results['text'].append({
+                            'x': (gt_pose1[0] + gt_pose2[0]) / 2,
+                            'y': (gt_pose1[1] + gt_pose2[1]) / 2,
+                            'text': f"{distance:.2f}",
+                            'color': color,
+                            'fontsize': 8,
+                            'ha': 'center',
+                            'va': 'center'
+                        })
+
+                    f.write(
+                        f"{index},{relative_time1},{relative_time2},"
+                        f"{distance},{angle},"
+                        # Added new fields
+                        f"{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},"
+                        # GT pose
+                        f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
+                        f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
+                        # Est pose
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
+                else:
+                    f.write(
+                        f"{index},{relative_time1},{relative_time2},No GT data,,"
+                        # Added new fieldsinter_csv_filename
+                        f"{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},,,,,,,"
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f",,{estimated_relative_R},{estimated_relative_t}\n")
+            else:
+                f.write(
+                    f"{index},,,No keyframe data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
+
+
+def process_inter_lc_data(i, inter_df, groundtruth_data, keyframes_data,
+                          keyframes_dict, earliest_timestamp, output_file, results):
+    """Process inter LC data in separate process"""
+    print(f"Processing inter data for {ID2ROBOT[i]}")
+    with open(output_file + ID2ROBOT[i] + '.csv', 'w') as f:
+        # Write the CSV header
+        f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,"
+                "Distance,Rotation Angle (Radian),"
+                "norm_bow_score,mono_inliers,stereo_inliers,"  # Added new fields
+                "Estimated Distance,Estimated Angle(Radian),"
+                "Timestamp 1,Timestamp 2,"
+                "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
+                "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
+                "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
+                "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
+                "Relative Rotation Quaternion,Relative Translation Vector,"
+                "Estimated Relative Rotation,Estimated Relative Translation\n")
+
+        # f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,Distance,Rotation Angle (radians),Estimated Distance, Estimated Angle(Radian),Timestamp 1,Timestamp 2,Relative Rotation Quaternion,Relative Translation Vector,Estimated Relative Rotation, Estimated Relative Translation\n")
+
+        # Iterate through loop closure data to calculate relative poses
+        for index, row in tqdm(inter_df.iterrows(),
+                               desc=f"Processing inter-LC for {ID2ROBOT[i]}",
+                               leave=False):
+            robot1 = row['robot1']
+            robot2 = row['robot2']
+            keyframe_id1 = row['pose1']
+            keyframe_id2 = row['pose2']
+
+            timestamp1 = keyframes_dict[robot1].get(keyframe_id1)
+            timestamp2 = keyframes_dict[robot2].get(keyframe_id2)
+
+            estimated_relative_R = np.array(
+                [row['qw'], row['qx'], row['qy'], row['qz']])
+            estimated_relative_t = row[8:11].values
+            estimated_distance = np.linalg.norm(estimated_relative_t)
+            estimated_angle = R.from_quat(estimated_relative_R).magnitude()
+
+            if timestamp1 is not None and timestamp2 is not None:
+                est_pose1 = keyframes_data[robot1].loc[keyframes_data[robot1]['keyframe_id'] == keyframe_id1][[
+                    'tx', 'ty', 'tz']].values[0]
+                est_pose2 = keyframes_data[robot2].loc[keyframes_data[robot2]['keyframe_id'] == keyframe_id2][[
+                    'tx', 'ty', 'tz']].values[0]
+
+                relative_time1 = timestamp1 - earliest_timestamp[int(robot1)]
+                relative_time2 = timestamp2 - earliest_timestamp[int(robot2)]
+
+                gt_pose1 = find_closest_pose(
+                    timestamp1, groundtruth_data[robot1], tolerance=0.1)
+                gt_pose2 = find_closest_pose(
+                    timestamp2, groundtruth_data[robot2], tolerance=0.1)
+
+                if gt_pose1 is not None and gt_pose2 is not None:
+
+                    # Calculate the relative pose, distance, and rotation angle
+                    q_rel, t_rel, distance, angle = calculate_relative_pose(
+                        gt_pose1, gt_pose2)
+
+                    color = cmap(norm(distance))
+                    results['lines'].append({
+                        'x': [gt_pose1[0], gt_pose2[0]],
+                        'y': [gt_pose1[1], gt_pose2[1]],
+                        'style': '--',
+                        'color': color,
+                        'alpha': 0.6,
+                        'linewidth': 1.0
+                    })
+                    # Store points data
+                    results['points'].extend([
+                        {'x': gt_pose1[0], 'y': gt_pose1[1],
+                            'marker': 'o', 'color': color},
+                        {'x': gt_pose2[0], 'y': gt_pose2[1],
+                            'marker': 's', 'color': color}
+                    ])
+
+                    if distance > args.threshold:
+                        results['text'].append({
+                            'x': (gt_pose1[0] + gt_pose2[0]) / 2,
+                            'y': (gt_pose1[1] + gt_pose2[1]) / 2,
+                            'text': f"{distance:.2f}",
+                            'color': color,
+                            'fontsize': 8,
+                            'ha': 'center',
+                            'va': 'center'
+                        })
+
+                    f.write(
+                        f"{index},{ID2ROBOT[int(robot1)]},{relative_time1},"
+                        f"{ID2ROBOT[int(robot2)]},{relative_time2},"
+                        f"{distance},{angle},"
+                        # Added new fields
+                        f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},"
+                        # GT pose
+                        f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
+                        f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
+                        # Est pose
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
+                else:
+                    f.write(
+                        f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No GT data,,"
+                        f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
+                        f"{estimated_distance},{estimated_angle},"
+                        f"{timestamp1},{timestamp2},,,,,,,"
+                        # Estimated pose
+                        f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
+                        f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
+                        f",,{estimated_relative_R},{estimated_relative_t}\n")
+            else:
+                f.write(
+                    f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No keyframe data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
+
+
 def main(args):
+    args = parse_args()
     start_time = time.time()
     fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -225,333 +590,89 @@ def main(args):
     lcd_result_files = [f"{loop_closure_file_prefix}/{ID2ROBOT[i]}/single/output_lcd_result.csv"
                         for i in range(args.num_robots)]
 
-    # Process each robot's data
-    inter_lc_data = {}
-    intra_lc_data = {}
-    inter_lc_rejected_part_data = {}
-    for i in range(args.num_robots):
-        inter_lc_results, intra_lc_results, intra_lc_rejected_part_results = parse_csv_files(
-            loop_closure_files[i], lcd_status_files[i], lcd_result_files[i])
-        inter_lc_data[i] = pd.DataFrame(inter_lc_results)
-        intra_lc_data[i] = pd.DataFrame(intra_lc_results)
-        inter_lc_rejected_part_data[i] = pd.DataFrame(
-            intra_lc_rejected_part_results)
+    # Initialize multiprocessing pool
+    num_processes = args.num_robots  # max(1, multiprocessing.cpu_count() - 1)
+    print(f"Using {num_processes} processes for parallel processing")
 
-    # Read the ground truth data for all robots with progress bar
+    # Read ground truth and keyframe data first (these are needed by all processes)
     print("Loading ground truth data...")
-    groundtruth_files = [
-        f"{groundtruth_files_prefix}modified_{ID2ROBOT[i]}_gt_odom.tum" for i in range(args.num_robots)
-    ]
+    groundtruth_files = [f"{groundtruth_files_prefix}modified_{ID2ROBOT[i]}_gt_odom.tum"
+                         for i in range(args.num_robots)]
     groundtruth_data = {}
     for i, file in enumerate(tqdm(groundtruth_files, desc="Reading ground truth")):
         groundtruth_data[i] = read_groundtruth_tum(file)
 
-    # Read the keyframes data for all robots, use keyframe's ID mapping timestamp
     print("Loading keyframe data...")
-    keyframes_files = [
-        f"{keyframes_files_prefix}{ID2ROBOT[i]}/distributed/kimera_distributed_keyframes.csv" for i in range(args.num_robots)
-    ]
+    keyframes_files = [f"{keyframes_files_prefix}{ID2ROBOT[i]}/distributed/kimera_distributed_keyframes.csv"
+                       for i in range(args.num_robots)]
     keyframes_data = {}
     for i, file in enumerate(tqdm(keyframes_files, desc="Reading keyframes")):
         keyframes_data[i] = pd.read_csv(file)
 
-    # Create a dictionary to store the keyframe timestamps by ID for each robot
-    keyframes_dict = {
-        i: {row['keyframe_id']: row['keyframe_stamp_ns'] /
-            1e9 for _, row in keyframes_data[i].iterrows()}
-        for i in range(args.num_robots)
-    }
-
+    # Create keyframes dictionary
+    keyframes_dict = {i: {row['keyframe_id']: row['keyframe_stamp_ns'] / 1e9
+                          for _, row in keyframes_data[i].iterrows()}
+                      for i in range(args.num_robots)}
     earliest_timestamp = [keyframes_dict[i].get(
         0) for i in range(args.num_robots)]
 
-    line_collection = []
-    # Process each robot's data with progress bar
-    print("Processing robot data...")
-    for i in tqdm(range(args.num_robots), desc="Processing robots"):
-        with open(intra_rejected_part_output_file + ID2ROBOT[i] + '.csv', 'w') as f:
-            # Write the CSV header
-            f.write("Loop Closure Number,Relative Time 1,Relative Time 2,"
-                    "Distance,Rotation Angle (radians),"
-                    "mono_inliers,stereo_inliers,"  # Added new fields
-                    "Estimated Distance,Estimated Angle(Radian),"
-                    "Timestamp 1,Timestamp 2,"
-                    "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
-                    "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
-                    "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
-                    "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
-                    "Relative Rotation Quaternion, Relative Translation Vector,"
-                    "Estimated Relative Rotation,Estimated Relative Translation\n")
+    fig, ax = plt.subplots(figsize=(10, 8))
 
-            for index, row in tqdm(inter_lc_rejected_part_data[i].iterrows(),
-                                   desc=f"Processing rejected data for {ID2ROBOT[i]}",
-                                   leave=False):
-                keyframe_id1 = row['pose1']
-                keyframe_id2 = row['pose2']
+    # Create manager for shared resources - remove Lock
+    manager = Manager()
+    shared_dict = manager.dict()  # Shared dictionary for results
 
-                timestamp1 = keyframes_dict[i].get(keyframe_id1)
-                timestamp2 = keyframes_dict[i].get(keyframe_id2)
+    # Process robots in parallel - remove plot_lock from parameters
+    with multiprocessing.Pool(num_processes) as pool:
+        process_func = partial(process_robot_data,
+                               args=args,
+                               shared_dict=shared_dict,
+                               loop_closure_files=loop_closure_files,
+                               lcd_status_files=lcd_status_files,
+                               lcd_result_files=lcd_result_files,
+                               groundtruth_data=groundtruth_data,
+                               keyframes_data=keyframes_data,
+                               keyframes_dict=keyframes_dict,
+                               earliest_timestamp=earliest_timestamp,
+                               inter_output_file=inter_output_file,
+                               intra_output_file=intra_output_file,
+                               intra_rejected_part_output_file=intra_rejected_part_output_file)
 
-                if timestamp1 is not None and timestamp2 is not None:
-                    est_pose1 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id1][[
-                        'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw']].values[0]
-                    est_pose2 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id2][[
-                        'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw']].values[0]
+        results = list(tqdm(
+            pool.imap(process_func, range(args.num_robots)),
+            total=args.num_robots,
+            desc="Processing robots in parallel"
+        ))
 
-                    estimated_relative_R, estimated_relative_t, estimated_distance, estimated_angle = calculate_relative_pose(
-                        est_pose1, est_pose2)
+    # Create figure after all processing is complete
+    fig, ax = plt.subplots(figsize=(10, 8))
 
-                    relative_time1 = timestamp1 - \
-                        earliest_timestamp[i]
-                    relative_time2 = timestamp2 - \
-                        earliest_timestamp[i]
+    # Plot results from shared dictionary
+    for i in range(args.num_robots):
+        robot_results = shared_dict[f'robot_{i}']
 
-                    gt_pose1 = find_closest_pose(
-                        timestamp1, groundtruth_data[i], tolerance=0.1)
-                    gt_pose2 = find_closest_pose(
-                        timestamp2, groundtruth_data[i], tolerance=0.1)
+        # Plot lines
+        for line_data in robot_results['lines']:
+            ax.plot(line_data['x'], line_data['y'],
+                    line_data['style'],
+                    color=line_data['color'],
+                    alpha=line_data['alpha'],
+                    linewidth=line_data['linewidth'])
 
-                    if gt_pose1 is not None and gt_pose2 is not None:
+        # Plot points
+        for point in robot_results['points']:
+            ax.scatter(point['x'], point['y'],
+                       marker=point['marker'],
+                       color=point['color'],
+                       s=20, zorder=5,
+                       edgecolor='black',
+                       linewidth=0.5)
 
-                        # Calculate the relative pose, distance, and rotation angle
-                        q_rel, t_rel, distance, angle = calculate_relative_pose(
-                            gt_pose1, gt_pose2)
-
-                        f.write(
-                            f"{index},{relative_time1},{relative_time2},"
-                            f"{distance},{angle},"
-                            f"{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},"
-                            # GT pose
-                            f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
-                            f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
-                            # Estimated pose
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
-                    else:
-                        f.write(
-                            f"{index},{relative_time1},{relative_time2},"
-                            f"No GT data,,"
-                            f"{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},,,,,,,"
-                            # Estimated pose
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f",,{estimated_relative_R},{estimated_relative_t}\n")
-                else:
-                    f.write(
-                        f"{index},,,No keyframe data,,\n")
-
-        with open(intra_output_file + ID2ROBOT[i] + '.csv', 'w') as f:
-            # Write the CSV header
-            f.write("Loop Closure Number,Relative Time 1,Relative Time 2,"
-                    "Distance,Rotation Angle (radiansinter_csv_filename),"
-                    "mono_inliers,stereo_inliers,"  # Added new fields
-                    "Estimated Distance,Estimated Angle(Radian),"
-                    "Timestamp 1,Timestamp 2,"
-                    "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
-                    "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
-                    "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
-                    "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
-                    "Relative Rotation Quaternion,Relative Translation Vector,"
-                    "Estimated Relative Rotation,Estimated Relative Translation\n")
-
-            # f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,Distance,Rotation Angle (radians),Estimated Distance, Estimated Angle(Radian),Timestamp 1,Timestamp 2,Relative Rotation Quaternion,Relative Translation Vector,Estimated Relative Rotation, Estimated Relative Translation\n")
-
-            # Iterate through intra-loop closure data to calculate relative poses
-            for index, row in tqdm(intra_lc_data[i].iterrows(),
-                                   desc=f"Processing intra-LC for {ID2ROBOT[i]}",
-                                   leave=False):
-                keyframe_id1 = row['pose1']
-                keyframe_id2 = row['pose2']
-
-                timestamp1 = row['timestamp1'] / 1e9
-                timestamp2 = row['timestamp2'] / 1e9
-
-                estimated_relative_R = np.array(
-                    [row['qw'], row['qx'], row['qy'], row['qz']])
-                estimated_relative_t = np.array(
-                    [row['tx'], row['ty'], row['tz']])
-                estimated_distance = np.linalg.norm(estimated_relative_t)
-                estimated_angle = R.from_quat(estimated_relative_R).magnitude()
-
-                if timestamp1 is not None and timestamp2 is not None:
-                    gt_pose1 = find_closest_pose(
-                        timestamp1, groundtruth_data[i], tolerance=0.1)
-                    gt_pose2 = find_closest_pose(
-                        timestamp2, groundtruth_data[i], tolerance=0.1)
-
-                    if gt_pose1 is not None and gt_pose2 is not None:
-                        relative_time1 = timestamp1 - \
-                            earliest_timestamp[i]
-                        relative_time2 = timestamp2 - \
-                            earliest_timestamp[i]
-
-                        est_pose1 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id1][[
-                            'tx', 'ty', 'tz']].values[0]
-                        est_pose2 = keyframes_data[i].loc[keyframes_data[i]['keyframe_id'] == keyframe_id2][[
-                            'tx', 'ty', 'tz']].values[0]
-
-                        # Calculate the relative pose, distance, and rotation angle
-                        q_rel, t_rel, distance, angle = calculate_relative_pose(
-                            gt_pose1, gt_pose2)
-
-                        color = cmap(norm(distance))
-                        line = ax.plot([gt_pose1[0], gt_pose2[0]], [
-                            gt_pose1[1], gt_pose2[1]], '-.', color=color, alpha=0.6, linewidth=1.0)
-                        line_collection.append(line[0])
-
-                        # Add distance value in the middle of the line
-                        if distance >= 50:
-                            mid_point = (gt_pose1 + gt_pose2) / 2
-                            ax.text(mid_point[0], mid_point[1],
-                                    f"{distance:.2f}",
-                                    color=color,
-                                    fontsize=8)
-
-                        # Add points for corresponding poses
-                        ax.scatter(gt_pose1[0], gt_pose1[1], color=color, marker='o',
-                                   s=20, zorder=5, edgecolor='black', linewidth=0.5)
-                        ax.scatter(gt_pose2[0], gt_pose2[1], color=color, marker='s',
-                                   s=20, zorder=5, edgecolor='black', linewidth=0.5)
-
-                        f.write(
-                            f"{index},{relative_time1},{relative_time2},"
-                            f"{distance},{angle},"
-                            # Added new fields
-                            f"{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},"
-                            # GT pose
-                            f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
-                            f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
-                            # Est pose
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
-                    else:
-                        f.write(
-                            f"{index},{relative_time1},{relative_time2},No GT data,,"
-                            # Added new fieldsinter_csv_filename
-                            f"{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},,,,,,,"
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f",,{estimated_relative_R},{estimated_relative_t}\n")
-                else:
-                    f.write(
-                        f"{index},,,No keyframe data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
-
-        with open(inter_output_file + ID2ROBOT[i] + '.csv', 'w') as f:
-            # Write the CSV header
-            f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,"
-                    "Distance,Rotation Angle (Radian),"
-                    "norm_bow_score,mono_inliers,stereo_inliers,"  # Added new fields
-                    "Estimated Distance,Estimated Angle(Radian),"
-                    "Timestamp 1,Timestamp 2,"
-                    "GT_Pose1_X,GT_Pose1_Y,GT_Pose1_Z,"  # Ground truth positions
-                    "GT_Pose2_X,GT_Pose2_Y,GT_Pose2_Z,"
-                    "Est_Pose1_X,Est_Pose1_Y,Est_Pose1_Z,"  # Estimated positions
-                    "Est_Pose2_X,Est_Pose2_Y,Est_Pose2_Z,"
-                    "Relative Rotation Quaternion,Relative Translation Vector,"
-                    "Estimated Relative Rotation,Estimated Relative Translation\n")
-
-            # f.write("Loop Closure Number,Robot 1,Relative Time 1,Robot 2,Relative Time 2,Distance,Rotation Angle (radians),Estimated Distance, Estimated Angle(Radian),Timestamp 1,Timestamp 2,Relative Rotation Quaternion,Relative Translation Vector,Estimated Relative Rotation, Estimated Relative Translation\n")
-
-            # Iterate through loop closure data to calculate relative poses
-            for index, row in tqdm(inter_lc_data[i].iterrows(),
-                                   desc=f"Processing inter-LC for {ID2ROBOT[i]}",
-                                   leave=False):
-                robot1 = row['robot1']
-                robot2 = row['robot2']
-                keyframe_id1 = row['pose1']
-                keyframe_id2 = row['pose2']
-
-                timestamp1 = keyframes_dict[robot1].get(keyframe_id1)
-                timestamp2 = keyframes_dict[robot2].get(keyframe_id2)
-
-                estimated_relative_R = np.array(
-                    [row['qw'], row['qx'], row['qy'], row['qz']])
-                estimated_relative_t = row[8:11].values
-                estimated_distance = np.linalg.norm(estimated_relative_t)
-                estimated_angle = R.from_quat(estimated_relative_R).magnitude()
-
-                if timestamp1 is not None and timestamp2 is not None:
-                    est_pose1 = keyframes_data[robot1].loc[keyframes_data[robot1]['keyframe_id'] == keyframe_id1][[
-                        'tx', 'ty', 'tz']].values[0]
-                    est_pose2 = keyframes_data[robot2].loc[keyframes_data[robot2]['keyframe_id'] == keyframe_id2][[
-                        'tx', 'ty', 'tz']].values[0]
-
-                    gt_pose1 = find_closest_pose(
-                        timestamp1, groundtruth_data[robot1], tolerance=0.1)
-                    gt_pose2 = find_closest_pose(
-                        timestamp2, groundtruth_data[robot2], tolerance=0.1)
-
-                    if gt_pose1 is not None and gt_pose2 is not None:
-                        relative_time1 = timestamp1 - \
-                            earliest_timestamp[int(robot1)]
-                        relative_time2 = timestamp2 - \
-                            earliest_timestamp[int(robot2)]
-
-                        # Calculate the relative pose, distance, and rotation angle
-                        q_rel, t_rel, distance, angle = calculate_relative_pose(
-                            gt_pose1, gt_pose2)
-
-                        color = cmap(norm(distance))
-                        line = ax.plot([gt_pose1[0], gt_pose2[0]], [
-                            gt_pose1[1], gt_pose2[1]], '--', color=color, alpha=0.6, linewidth=1.0)
-                        line_collection.append(line[0])
-
-                        # Add distance value in the middle of the line
-                        if distance >= 50:
-                            mid_point = (gt_pose1 + gt_pose2) / 2
-                            ax.text(mid_point[0], mid_point[1],
-                                    f"{distance:.2f}",
-                                    color=color,
-                                    fontsize=8)
-
-                        # Add points for corresponding poses
-                        ax.scatter(gt_pose1[0], gt_pose1[1], color=color, marker='o',
-                                   s=20, zorder=5, edgecolor='black', linewidth=0.5)
-                        ax.scatter(gt_pose2[0], gt_pose2[1], color=color, marker='s',
-                                   s=20, zorder=5, edgecolor='black', linewidth=0.5)
-
-                        f.write(
-                            f"{index},{ID2ROBOT[int(robot1)]},{relative_time1},"
-                            f"{ID2ROBOT[int(robot2)]},{relative_time2},"
-                            f"{distance},{angle},"
-                            # Added new fields
-                            f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},"
-                            # GT pose
-                            f"{gt_pose1[0]},{gt_pose1[1]},{gt_pose1[2]},"
-                            f"{gt_pose2[0]},{gt_pose2[1]},{gt_pose2[2]},"
-                            # Est pose
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f"{q_rel},{t_rel},{estimated_relative_R},{estimated_relative_t}\n")
-                    else:
-                        f.write(
-                            f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No GT data,,"
-                            f"{row['norm_bow_score']},{row['mono_inliers']},{row['stereo_inliers']},"
-                            f"{estimated_distance},{estimated_angle},"
-                            f"{timestamp1},{timestamp2},,,,,,,"
-                            # Estimated pose
-                            f"{est_pose1[0]},{est_pose1[1]},{est_pose1[2]},"
-                            f"{est_pose2[0]},{est_pose2[1]},{est_pose2[2]},"
-                            f",,{estimated_relative_R},{estimated_relative_t}\n")
-                else:
-                    f.write(
-                        f"{index},{ID2ROBOT[int(robot1)]},,{ID2ROBOT[int(robot2)]},,No keyframe data,,{estimated_distance},{estimated_angle},{timestamp1},{timestamp2}\n")
-
-        trajectory = groundtruth_data[i][['tx', 'ty', 'tz']].values
-        ax.plot(trajectory[:, 0], trajectory[:, 1],
-                label=ID2ROBOT[i], linewidth=1.5)
+        # Plot trajectory
+        ax.plot(robot_results['trajectory'][:, 0],
+                robot_results['trajectory'][:, 1],
+                label=ID2ROBOT[i],
+                linewidth=1.5)
 
     # Add grid and labels
     ax.grid(True, linestyle='--', alpha=0.6)
