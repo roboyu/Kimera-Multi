@@ -17,7 +17,11 @@ Here are main changes or new features(still updating):
 3. Add a [branch](https://github.com/RonghaiHe/Kimera-Multi/tree/ubuntu18) to deploy it in ubuntu 18.04
 4. Deploy one-key start (In `/examples/slam_front`)
 5. Update `kimera-multi.drawio` file (In `/images`)
-5. Add evaluation for loop closures (Find GT poses, output corresponding images, statistics, etc. in `/evaluation`)
+6. Add evaluation for loop closures (Find GT poses, output corresponding images, statistics, etc. in `/evaluation`)
+7. Modify for less randomized by setting random seed in a thread-safe way
+  - By setting `deterministic_random_number_generator` true in `/params/D455/Pipeline.flags`
+  - By setting `ransac_randomize` 0 in `/params/D455/LcdParams.yaml`
+  - By setting `ransac_randomize` 0 in `/params/visual_loopclosure_Jackal.yaml` in [Kimera-Distributed](https://github.com/RonghaiHe/Kimera-Distributed)
 
 <details>
   <summary>See Changelog for more details:</summary>
@@ -25,6 +29,12 @@ Here are main changes or new features(still updating):
   2025/01
   - Add more evaluation for loop closures (In `/evalution`):
     - Count monocular inliers and stereo inliers w.r.t. threshold (`10` & `5`) (`analyze_inliers.py`)
+  - Modify for less randomized:
+    - Modify the repository [Kimera-VIO-ROS](https://github.com/RonghaiHe/Kimera-VIO-ROS) to read the pipeline flags for determinical random seed
+    - Modify repositories [dpgo_ros](https://github.com/RonghaiHe/dpgo_ros), [dpgo](https://github.com/RonghaiHe/dpgo) and [Kimera-Distributed](https://github.com/RonghaiHe/Kimera-Distributed) to set random seed for random number generators, then add the input in `1014-example.yaml` (In `/examples`)
+    - Modify the repository [OpenGV](https://github.com/RonghaiHe/opengv) to be the thread-safe random seed using `thread_local`
+    - Modify the repository [Kimera-Multi-LCD](https://github.com/RonghaiHe/Kimera-Multi-LCD) to judge if using the random seed randomizedly
+
 
   2024/12
   - Deploy one-key start (In `/example/slam_front`)
@@ -39,7 +49,7 @@ Here are main changes or new features(still updating):
   - Automatically run it multiple times based on `run_multi_times.sh`
 
   2024/09:
-  - Change output format(TUM)
+  - Change output format(TUM) in this [commit](https://github.com/MIT-SPARK/Kimera-Distributed/commit/c4c8e51462d23b72413548e19eadf9ffefcdc4b7) in [Kimera-Distributed](https://github.com/MIT-SPARK/Kimera-Distributed/)
   - Add evo evaluation in examples
 
   2024/08:
