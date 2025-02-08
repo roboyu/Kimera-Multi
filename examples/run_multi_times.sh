@@ -1,39 +1,64 @@
 #!/bin/bash
+###
+ # Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights Reserved
+ # @Author: Ronghai He
+ # @Date: 2024-10-31 12:32:52
+ # @LastEditors: RonghaiHe hrhkjys@qq.com
+ # @LastEditTime: 2025-01-19 22:55:53
+ # @FilePath: /src/kimera_multi/examples/run_multi_times.sh
+ # @Version: 
+ # @Description: 
+ # 
+### 
 
-# Define the target script and the file to check
-TARGET_SCRIPT="run.sh"
-CHECK_PYTHON_SCRIPT="evo_real_time.py"
-DIR_ORIGIN="/media/sysu/Data/multi_robot_datasets/kimera_multi_datasets/evo_try/test"
-DIR_DEST="/media/sysu/Data/multi_robot_datasets/kimera_multi_datasets/evo_try/test_distributed_comm_50/"
+declare -A TIME2DATASET
+TIME2DATASET=(
+    ["10_14"]="campus_outdoor_10_14"
+    ["12_07"]="campus_tunnels_12_07"
+    ["12_08"]="campus_hybrid_12_08"
+)  
 
-# Loop to run the target script 10 times
-for i in {5..10}
-do
-    echo "Running the target script for the $i-th time"
-    # Open another terminal named "run" and Run the target script
+# ROBOT_KIND: 1: single robot, 2: multi robot
+ROBOT_KIND=${1:-"2"}
+DATE=${2:-"12_07"}
+
+DIR_BASE="/media/sysu/Data/multi_robot_datasets/kimera_multi_datasets/evo_try/${TIME2DATASET[$DATE]}"
+
+# Set directories based on robot kind
+if [ $ROBOT_KIND = "1" ]; then
+    # ./run_multi_times.sh 1 12_08
+    echo "Running single robot"
+    TARGET_SCRIPT="run.sh 1 $DATE"
+    DIR_ORIGIN="${DIR_BASE}/test_single"
+else
+    # ./run_multi_times.sh 2 12_08
+    echo "Running multi robot"
+    TARGET_SCRIPT="run.sh 2 $DATE"
+    DIR_ORIGIN="${DIR_BASE}/test_distributed"
+fi
+
+DIR_DEST="${DIR_ORIGIN}_/"
+
+# Loop to run the target script multiple times
+for i in {1..3}; do
+    echo "Running iteration $i"
     gnome-terminal --title="run" -- /bin/bash -c "cd /media/sysu/new_volume1/80G/sysu/herh/kimera_multi_ws/src/kimera_multi/examples; bash $TARGET_SCRIPT"
-    # bash $TARGET_SCRIPT
-    sleep 5
-    # Loop to check if the Python script is running
-    while true; do
-        if [ $(pgrep -f "$CHECK_PYTHON_SCRIPT" | wc -l) -lt 2 ]; then
-            # Run some commands if the Python script is running
-            echo "Try to kill the rosnode"
-            rosnode kill -a
-            sleep 5
-            echo "Success. Now try to kill tmux session"
-            tmux kill-server
-            sleep 5
-            echo "Success. Now try to modify the test directory"
-            mv $DIR_ORIGIN $DIR_ORIGIN"$i"
-            mv $DIR_ORIGIN"$i" $DIR_DEST
-            echo "Success. Now try to restart the experiment"
-            break
-        else
-            echo "Python script is running, checking again..."
-            sleep 600
-        fi
+    
+    # Wait for processing to complete
+    sleep 600
+    
+    # Check for Python script completion and cleanup
+    while pgrep -f "evo_real_time.py" > /dev/null; do
+        echo "Waiting for processing to complete..."
+        sleep 600
     done
+    
+    # Cleanup and prepare for next iteration
+    tmux kill-server
+    mv "$DIR_ORIGIN" "${DIR_ORIGIN}${i}"
+    mv "${DIR_ORIGIN}${i}" "$DIR_DEST"
+    
+    echo "Iteration $i completed"
 done
 
-echo "Done. Go and check the results in ${DIR_DEST}!"
+echo "All iterations completed. Results are in ${DIR_DEST}"

@@ -44,43 +44,43 @@ windows:
     - mkdir -p $LOG_DIR/$ROBOT3/single
     - mkdir -p $LOG_DIR/$ROBOT4/single
     - mkdir -p $LOG_DIR/$ROBOT5/single
-    - sleep 15;
+    - sleep 5;
 
   panes:
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT0/distributed
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=1 robot_name:=$ROBOT1 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT1/distributed
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=2 robot_name:=$ROBOT2 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT2/distributed
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=3 robot_name:=$ROBOT3 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT3/distributed
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=4 robot_name:=$ROBOT4 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT4/distributed
-    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=5 robot_name:=$ROBOT5 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT5/distributed
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT0/distributed random_seed:=0
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=1 robot_name:=$ROBOT1 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT1/distributed random_seed:=1
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=2 robot_name:=$ROBOT2 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT2/distributed random_seed:=2
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=3 robot_name:=$ROBOT3 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT3/distributed random_seed:=3
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=4 robot_name:=$ROBOT4 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT4/distributed random_seed:=4
+    - roslaunch kimera_distributed kimera_distributed.launch robot_id:=5 robot_name:=$ROBOT5 num_robots:=$NUM_ROBOTS dataset_name:=Jackal log_output_path:=$LOG_DIR/$ROBOT5/distributed random_seed:=5
 
 - window_name: dpgo
   layout: tiled
   shell_command_before:
     - source $CATKIN_WS/devel/setup.bash
-    - sleep 15;
+    - sleep 5;
 
   panes:
-    - roslaunch kimera_distributed dpgo.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT0/distributed
-    - roslaunch kimera_distributed dpgo.launch robot_id:=1 robot_name:=$ROBOT1 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT1/distributed
-    - roslaunch kimera_distributed dpgo.launch robot_id:=2 robot_name:=$ROBOT2 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT2/distributed
-    - roslaunch kimera_distributed dpgo.launch robot_id:=3 robot_name:=$ROBOT3 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT3/distributed
-    - roslaunch kimera_distributed dpgo.launch robot_id:=4 robot_name:=$ROBOT4 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT4/distributed
-    - roslaunch kimera_distributed dpgo.launch robot_id:=5 robot_name:=$ROBOT5 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT5/distributed
+    - roslaunch kimera_distributed dpgo.launch robot_id:=0 robot_name:=$ROBOT0 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT0/distributed random_seed:=6
+    - roslaunch kimera_distributed dpgo.launch robot_id:=1 robot_name:=$ROBOT1 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT1/distributed random_seed:=7
+    - roslaunch kimera_distributed dpgo.launch robot_id:=2 robot_name:=$ROBOT2 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT2/distributed random_seed:=8
+    - roslaunch kimera_distributed dpgo.launch robot_id:=3 robot_name:=$ROBOT3 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT3/distributed random_seed:=9
+    - roslaunch kimera_distributed dpgo.launch robot_id:=4 robot_name:=$ROBOT4 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT4/distributed random_seed:=10
+    - roslaunch kimera_distributed dpgo.launch robot_id:=5 robot_name:=$ROBOT5 num_robots:=$NUM_ROBOTS dataset_name:=Jackal multi_master:=false log_output_path:=$LOG_DIR/$ROBOT5/distributed random_seed:=11
 
 - window_name: vio
   layout: tiled  
   shell_command_before:
     - source $CATKIN_WS/devel/setup.bash
-    - sleep 15;
+    - sleep 5;
 
   panes:
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT0/single
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT1 robot_id:=1 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT1/single
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT2 robot_id:=2 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT2/single
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT3 robot_id:=3 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT3/single
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT4 robot_id:=4 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT4/single
-    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT5 robot_id:=5 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT5/single
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT0 robot_id:=0 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT0/single include_pipeline_flags:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT1 robot_id:=1 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT1/single include_pipeline_flags:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT2 robot_id:=2 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT2/single include_pipeline_flags:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT3 robot_id:=3 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT3/single include_pipeline_flags:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT4 robot_id:=4 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT4/single include_pipeline_flags:=true
+    - roslaunch kimera_multi kimera_vio_jackal.launch robot_name:=$ROBOT5 robot_id:=5 use_d455:=true multirobot:=true lcd_no_optimize:=true use_external_odom:=true replay:=true should_use_sim_time:=true log_output:=true log_output_path:=$LOG_DIR/$ROBOT5/single include_pipeline_flags:=true
 
 - window_name: data
   focus: true  
@@ -97,6 +97,6 @@ windows:
     - sleep 15; roslaunch kimera_distributed mit_rosbag.launch bagfile:=$ROSBAG5 input_ns:=$ROBOT5 output_ns:=$ROBOT5 rate:=$RATE
     - sleep 15; rviz -d $(rospack find kimera_distributed)/rviz/single_machine.rviz
     - roscore
-    - source ~/miniconda3/bin/activate env3_9; python $CATKIN_WS/src/kimera_multi/examples/evo_real_time.py
+    - source ~/miniconda3/bin/activate env3_9; python $CATKIN_WS/src/kimera_multi/examples/evo_real_time.py --date $NAME_TIME
     # - bash del_poses_files.sh $LOG_DIR $DATA_PATH/Kimera-Multi-Public-Data/ground_truth/ $NAME_TIME
     - rosnode kill -a  & pkill -f evo_real_time.py\
