@@ -77,8 +77,8 @@ repositories:
     version: feature/noetic_fixes
   kimera_vio:
     type: git
-    url: git clone -b features/range_frontend --single-branch git@github.com:roboyu/Kimera-VIO.git
-    version: features/range_fronted
+    url: git@github.com:roboyu/Kimera-VIO.git 
+    version: features/range_frontend
   mesh_rviz_plugins:
     type: git
     url: git@github.com:MIT-SPARK/mesh_rviz_plugins.git
